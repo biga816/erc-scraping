@@ -5,5 +5,5 @@ services:
     # ports:
     #   - "8080:8080"
     volumes:
-      - ".:/server"
-    command: go run src/main.go
+      - ".:/go/src/erc-scraping"
+    command: go run cmd/main.go

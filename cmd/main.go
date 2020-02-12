@@ -1,10 +1,11 @@
 package main
 
 import (
-	"fmt"
-	"reflect"
+	"log"
 	"regexp"
 	"strings"
+
+	firestore "erc-scraping/internal/firestore"
 
 	"github.com/PuerkitoBio/goquery"
 )
@@ -55,23 +56,22 @@ func scrape(url string) {
 		})
 
 		// get data
-		ercInfo := ERCInfo{}
-		p := reflect.ValueOf(&ercInfo).Elem()
+		ercInfo := make(map[string]string)
+
 		table.Find("tbody").Find("td").Each(func(idx int, s *goquery.Selection) {
 			if len(titleList) > idx {
 				title := titleList[idx]
 				if title == "eip" || title == "title" || title == "category" || title == "status" || title == "type" || title == "created" {
-					// println("-> " + title + ": " + s.Text())
-					fieldName := strings.ToUpper(title[0:1]) + title[1:len(title)]
-					p.FieldByName(fieldName).SetString(s.Text())
+					ercInfo[title] = s.Text()
 				}
 			}
 		})
 
 		// check if the EIP is ERC
-		if strings.ToLower(ercInfo.Category) == "erc" && strings.ToLower(ercInfo.Status) == "final" {
-			ercInfo.URL = url
-			fmt.Printf("%+v\n", ercInfo)
+		if strings.ToLower(ercInfo["category"]) == "erc" && strings.ToLower(ercInfo["status"]) == "final" {
+			ercInfo["url"] = url
+			firestore.Save("ercs", ercInfo["eip"], ercInfo)
+			log.Print("ERC" + ercInfo["eip"])
 		}
 	}
 }
