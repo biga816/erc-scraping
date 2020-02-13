@@ -2,12 +2,14 @@ package main
 
 import (
 	"log"
+	"os"
 	"regexp"
 	"strings"
 
 	firestore "erc-scraping/internal/firestore"
 
 	"github.com/PuerkitoBio/goquery"
+	"github.com/joho/godotenv"
 )
 
 // ERCInfo erc info
@@ -22,7 +24,12 @@ type ERCInfo struct {
 }
 
 func main() {
-	url := "https://github.com/ethereum/EIPs/tree/master/EIPS"
+	err := godotenv.Load()
+	if err != nil {
+		panic(err)
+	}
+
+	url := os.Getenv("TARGET_URL")
 
 	doc, err := goquery.NewDocument(url)
 	if err != nil {
@@ -35,7 +42,8 @@ func main() {
 
 		r := regexp.MustCompile(`^eip-.*\.md$`)
 		if r.MatchString(text) && hasHref {
-			scrape("https://github.com" + href)
+			domain := os.Getenv("TARGET_DOMAIN")
+			scrape(domain + href)
 		}
 	})
 }
@@ -71,7 +79,7 @@ func scrape(url string) {
 		if strings.ToLower(ercInfo["category"]) == "erc" && strings.ToLower(ercInfo["status"]) == "final" {
 			ercInfo["url"] = url
 			firestore.Save("ercs", ercInfo["eip"], ercInfo)
-			log.Print("ERC" + ercInfo["eip"])
+			log.Print(ercInfo["category"] + ercInfo["eip"])
 		}
 	}
 }
